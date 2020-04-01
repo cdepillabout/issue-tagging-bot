@@ -7,3 +7,6 @@ https://github.com/Synthetica9/nixpkgs-update-github-releases
 
 using pip in a virtualenv-like environment:
 https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/python.section.md#how-to-consume-python-modules-using-pip-in-a-virtual-environment-like-i-am-used-to-on-other-operating-systems
+
+rate limiting:
+https://developer.github.com/v3/#rate-limiting
