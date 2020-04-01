@@ -10,3 +10,9 @@ https://github.com/NixOS/nixpkgs/blob/master/doc/languages-frameworks/python.sec
 
 rate limiting:
 https://developer.github.com/v3/#rate-limiting
+
+read about poetry (and poetry vs virtualenv?):
+https://python-poetry.org/docs/
+
+this is doing something very similar with labeling github issues:
+https://github.com/machine-learning-apps/Issue-Label-Bot/blob/master/notebooks/Issue_Labeling_Model.ipynb
