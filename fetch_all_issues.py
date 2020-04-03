@@ -52,50 +52,65 @@ class IssueData():
                 issue.updated_at, issue.pull_request)
         return issue_data
 
-github = Github()
 
-rate_limit = github.get_rate_limit()
-print(rate_limit)
-print(rate_limit.core)
-print(rate_limit.core.reset)
-print(rate_limit.core.reset.tzinfo)
+class RateLimiter():
+    def __init__(self, github):
+        self.github = github
 
-reset_time = rate_limit.core.reset
-utc_reset_time = reset_time.replace(tzinfo=timezone.utc)
+    def maybe_wait(self):
+        # get the current limit
 
-sleep_until_time = reset_time + timedelta(minutes = 1)
-utc_sleep_until_time = sleep_until_time.replace(tzinfo=timezone.utc)
+def main():
 
-now = datetime.utcnow()
-utc_now = now.replace(tzinfo=timezone.utc)
+    github = Github()
 
-sleep_delta = sleep_until_time - now
+    rate_limiter = RateLimiter(github)
 
-print(f"now: {now} (local: {utc_now.astimezone()})")
-print(f"reset_time: {reset_time}")
-print(f"utc_reset_time: {utc_reset_time} (local: {utc_reset_time.astimezone()})")
-print(f"sleep_until_time: {sleep_until_time} (local: {utc_sleep_until_time.astimezone()})")
-print(f"sleep_delta: {sleep_delta}")
-print(f"sleep_delta.seconds: {sleep_delta.seconds}")
+    rate_limit = github.get_rate_limit()
+    print(rate_limit)
+    print(rate_limit.core)
+    print(rate_limit.core.reset)
+    print(rate_limit.core.reset.tzinfo)
 
-print(f"sleeping for {sleep_delta.seconds} seconds, until {sleep_until_time.astimezone()}...")
+    reset_time = rate_limit.core.reset
+    utc_reset_time = reset_time.replace(tzinfo=timezone.utc)
 
-sleep(sleep_delta.seconds)
+    sleep_until_time = reset_time + timedelta(minutes = 1)
+    utc_sleep_until_time = sleep_until_time.replace(tzinfo=timezone.utc)
 
-print("Woke up and ending.")
+    now = datetime.utcnow()
+    utc_now = now.replace(tzinfo=timezone.utc)
+
+    sleep_delta = sleep_until_time - now
+
+    print(f"now: {now} (local: {utc_now.astimezone()})")
+    print(f"reset_time: {reset_time}")
+    print(f"utc_reset_time: {utc_reset_time} (local: {utc_reset_time.astimezone()})")
+    print(f"sleep_until_time: {sleep_until_time} (local: {utc_sleep_until_time.astimezone()})")
+    print(f"sleep_delta: {sleep_delta}")
+    print(f"sleep_delta.seconds: {sleep_delta.seconds}")
+
+    print(f"sleeping for {sleep_delta.seconds} seconds, until {sleep_until_time.astimezone()}...")
+
+    sleep(sleep_delta.seconds)
+
+    print("Woke up and ending.")
 
 
-sys.exit()
+    sys.exit()
 
-repo = github.get_repo("NixOS/nixpkgs")
-l = repo.get_issues(state="all")
-print(l[0])
-first_issue = l[0]
+    repo = github.get_repo("NixOS/nixpkgs")
+    l = repo.get_issues(state="all")
+    print(l[0])
+    first_issue = l[0]
 
 
-print(MyEncoder().encode(IssueData.from_issue(l[6])))
+    print(MyEncoder().encode(IssueData.from_issue(l[6])))
 
-# for i in l:
-#     print()
-#     print(MyEncoder().encode(IssueData.from_issue(i)))
+    # for i in l:
+    #     print()
+    #     print(MyEncoder().encode(IssueData.from_issue(i)))
 
+if __name__ == "__main__":
+    # execute only if run as a script
+    main()
