@@ -57,11 +57,30 @@ class RateLimiter():
     def __init__(self, github):
         self.github = github
 
-    def maybe_wait(self):
+    def maybe_wait(self, buffer_amount=10):
         # get the current limit
-        self.rate_limit = github.get_rate_limit()
+        rate_limit = self.github.get_rate_limit()
+        remaining = rate_limit.core.remaining
 
-        # TODO: Continue writing this...
+        if remaining < buffer_amount:
+
+            reset_time = rate_limit.core.reset
+            utc_reset_time = reset_time.replace(tzinfo=timezone.utc)
+
+            sleep_until_time = reset_time + timedelta(minutes = 1)
+            utc_sleep_until_time = sleep_until_time.replace(tzinfo=timezone.utc)
+
+            now = datetime.utcnow()
+            utc_now = now.replace(tzinfo=timezone.utc)
+
+            sleep_delta = sleep_until_time - now
+
+            print(f"github rate limit remaining requests is {remaining},")
+            print(f"which is less than the buffer amount: {buffer_amount},")
+            print(f"so sleeping for {sleep_delta.seconds} seconds, until {sleep_until_time.astimezone()}...")
+
+            sleep(sleep_delta.seconds)
+
 
 def main():
 
@@ -69,35 +88,7 @@ def main():
 
     rate_limiter = RateLimiter(github)
 
-    rate_limit = github.get_rate_limit()
-    print(rate_limit)
-    print(rate_limit.core)
-    print(rate_limit.core.reset)
-    print(rate_limit.core.reset.tzinfo)
-
-    reset_time = rate_limit.core.reset
-    utc_reset_time = reset_time.replace(tzinfo=timezone.utc)
-
-    sleep_until_time = reset_time + timedelta(minutes = 1)
-    utc_sleep_until_time = sleep_until_time.replace(tzinfo=timezone.utc)
-
-    now = datetime.utcnow()
-    utc_now = now.replace(tzinfo=timezone.utc)
-
-    sleep_delta = sleep_until_time - now
-
-    print(f"now: {now} (local: {utc_now.astimezone()})")
-    print(f"reset_time: {reset_time}")
-    print(f"utc_reset_time: {utc_reset_time} (local: {utc_reset_time.astimezone()})")
-    print(f"sleep_until_time: {sleep_until_time} (local: {utc_sleep_until_time.astimezone()})")
-    print(f"sleep_delta: {sleep_delta}")
-    print(f"sleep_delta.seconds: {sleep_delta.seconds}")
-
-    print(f"sleeping for {sleep_delta.seconds} seconds, until {sleep_until_time.astimezone()}...")
-
-    sleep(sleep_delta.seconds)
-
-    print("Woke up and ending.")
+    rate_limiter.maybe_wait()
 
 
     sys.exit()

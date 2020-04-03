@@ -12,7 +12,10 @@ in
 with nixpkgs;
 
 let
-  pythonEnv = python37.withPackages (ps: [ps.PyGithub]);
+  pythonEnv = python37.withPackages (ps: with ps; [
+    PyGithub
+    mypy
+  ]);
 in
 pythonEnv.env
 
