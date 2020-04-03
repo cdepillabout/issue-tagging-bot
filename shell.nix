@@ -14,6 +14,9 @@ with nixpkgs;
 let
   pythonEnv = python37.withPackages (ps: with ps; [
     PyGithub
+
+    # dev tools
+    black
     mypy
   ]);
 in
