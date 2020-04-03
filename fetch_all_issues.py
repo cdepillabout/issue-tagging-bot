@@ -59,6 +59,9 @@ class RateLimiter():
 
     def maybe_wait(self):
         # get the current limit
+        self.rate_limit = github.get_rate_limit()
+
+        # TODO: Continue writing this...
 
 def main():
 
