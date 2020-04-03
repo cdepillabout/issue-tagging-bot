@@ -2,8 +2,9 @@
 
 import json
 import sys
+from datetime import datetime, timedelta, timezone
+from time import sleep
 
-from datetime import timezone
 from github import Github
 
 github = Github()
@@ -17,7 +18,23 @@ print(rate_limit.core.reset.tzinfo)
 reset_time = rate_limit.core.reset
 utc_reset_time = reset_time.replace(tzinfo=timezone.utc)
 
-print(utc_reset_time.astimezone())
+sleep_until_time = reset_time + timedelta(minutes = 1)
+
+now = datetime.utcnow()
+
+sleep_delta = sleep_until_time - now
+
+print(f"reset_time: {reset_time}")
+print(f"utc_reset_time: {utc_reset_time}")
+print(f"sleep_until_time: {sleep_until_time}")
+print(f"now: {now}")
+print(f"sleep_delta: {sleep_delta}")
+print(f"sleep_delta.seconds: {sleep_delta.seconds}")
+
+print(f"sleeping for {sleep_delta.seconds} seconds, until {sleep_until_time.astimezone()}...")
+
+sleep(sleep_delta.seconds)
+
 
 sys.exit()
 
