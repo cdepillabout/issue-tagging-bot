@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 
 import json
+import os
 import sys
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from time import sleep
+from typing import Optional
 
 # PyGithub has gotten mypy types, but it has not been released yet:
 # https://github.com/PyGithub/PyGithub/pull/1231
@@ -118,26 +121,101 @@ class RateLimiter:
             sleep(sleep_delta.seconds)
 
 
+class Fetcher:
+    def __init__(self, github: Github, repo_str: str = "NixOS/nixpkgs", data_dir_str: str = "issue-data") -> None:
+        self.github = github
+        self.rate_limiter = RateLimiter(github)
+        self.rate_limiter.maybe_wait()
+        self.repo: Repository = github.get_repo(repo_str)
+        self.data_dir_str = data_dir_str
+
+    def get_highest_issue_num(self) -> int:
+        self.rate_limiter.maybe_wait()
+        all_issues = self.repo.get_issues(state="all")
+        return all_issues.totalCount
+
+    def get_lowest_issue_num_already_downloaded(self) -> Optional[int]:
+        lowest: Optional[int] = None
+
+        # loop over all the files in the data directory
+        for f in os.listdir(self.data_dir_str):
+
+            # only look at files that have a .json extension
+            if f.endswith(".json"):
+
+                # only use the part of the filename that is before the .json extension
+                issue_num_str: str = Path(f).stem
+
+                # try to parse the issue number as an int from the filename.
+                try:
+                    issue_num: int = int(issue_num_str)
+                except ValueError:
+                    print(f"file {self.data_dir_str}/{f} does not have a file name stem readable as an int")
+                    continue
+
+                if lowest is None or issue_num < lowest:
+                    lowest = issue_num
+
+        return lowest
+
+    def create_data_dir(self) -> None:
+        Path(self.data_dir_str).mkdir(parents=True, exist_ok=True)
+
+    def save_issue(self, issue_num: int, issue_data: IssueData) -> None:
+        path = Path(self.data_dir_str) / f"{issue_num}.json"
+
+        issue_data_json = MyEncoder().encode(issue_data)
+
+        with path.open(mode="w") as f:
+            f.write(issue_data_json)
+
+    def get_issue(self, issue_num: int) -> None:
+        self.rate_limiter.maybe_wait()
+        issue = self.repo.get_issue(issue_num)
+        issue_data: IssueData = IssueData.from_issue(issue)
+        if not issue_data.is_pull_request:
+            self.save_issue(issue_num, issue_data)
+
+    def get_issues_from(self, starting_issue_num: int) -> None:
+        for issue_num in range(starting_issue_num, 0, -1):
+            self.get_issue(issue_num)
+
+    def run(self) -> None:
+        self.create_data_dir()
+        lowest_issue_num_already_downloaded: Optional[int] = self.get_lowest_issue_num_already_downloaded()
+        start_issue_num: int
+
+        if lowest_issue_num_already_downloaded is None:
+            start_issue_num = self.get_highest_issue_num()
+        elif lowest_issue_num_already_downloaded <= 1:
+            print("Already downloaded all issues! Ending.")
+            sys.exit(0)
+        else:
+            start_issue_num = lowest_issue_num_already_downloaded - 1
+
+        print(f"Starting with issue number: {start_issue_num}")
+
+        self.get_issues_from(start_issue_num)
+
+
+
 def main() -> None:
 
     github = Github()
 
-    rate_limiter = RateLimiter(github)
+    fetcher = Fetcher(github)
+    fetcher.run()
 
-    rate_limiter.maybe_wait()
+    # repo: Repository = github.get_repo("NixOS/nixpkgs")
+    # l = repo.get_issues(state="all")
+    # print(l[0])
+    # first_issue = l[0]
 
-    sys.exit()
+    # print(MyEncoder().encode(IssueData.from_issue(l[6])))
 
-    repo: Repository = github.get_repo("NixOS/nixpkgs")
-    l = repo.get_issues(state="all")
-    print(l[0])
-    first_issue = l[0]
-
-    print(MyEncoder().encode(IssueData.from_issue(l[6])))
-
-    for i in l:
-        print()
-        print(MyEncoder().encode(IssueData.from_issue(i)))
+    # for i in l:
+    #     print()
+    #     print(MyEncoder().encode(IssueData.from_issue(i)))
 
 
 if __name__ == "__main__":
