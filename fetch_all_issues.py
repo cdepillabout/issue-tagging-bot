@@ -7,42 +7,6 @@ from time import sleep
 
 from github import Github
 
-github = Github()
-
-rate_limit = github.get_rate_limit()
-print(rate_limit)
-print(rate_limit.core)
-print(rate_limit.core.reset)
-print(rate_limit.core.reset.tzinfo)
-
-reset_time = rate_limit.core.reset
-utc_reset_time = reset_time.replace(tzinfo=timezone.utc)
-
-sleep_until_time = reset_time + timedelta(minutes = 1)
-
-now = datetime.utcnow()
-
-sleep_delta = sleep_until_time - now
-
-print(f"reset_time: {reset_time}")
-print(f"utc_reset_time: {utc_reset_time}")
-print(f"sleep_until_time: {sleep_until_time}")
-print(f"now: {now}")
-print(f"sleep_delta: {sleep_delta}")
-print(f"sleep_delta.seconds: {sleep_delta.seconds}")
-
-print(f"sleeping for {sleep_delta.seconds} seconds, until {sleep_until_time.astimezone()}...")
-
-sleep(sleep_delta.seconds)
-
-
-sys.exit()
-
-repo = github.get_repo("NixOS/nixpkgs")
-l = repo.get_issues(state="all")
-print(l[0])
-first_issue = l[0]
-
 class MyEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, LabelData):
@@ -87,6 +51,47 @@ class IssueData():
                 issue.labels, issue.comments, issue.closed_at, issue.created_at,
                 issue.updated_at, issue.pull_request)
         return issue_data
+
+github = Github()
+
+rate_limit = github.get_rate_limit()
+print(rate_limit)
+print(rate_limit.core)
+print(rate_limit.core.reset)
+print(rate_limit.core.reset.tzinfo)
+
+reset_time = rate_limit.core.reset
+utc_reset_time = reset_time.replace(tzinfo=timezone.utc)
+
+sleep_until_time = reset_time + timedelta(minutes = 1)
+utc_sleep_until_time = sleep_until_time.replace(tzinfo=timezone.utc)
+
+now = datetime.utcnow()
+utc_now = now.replace(tzinfo=timezone.utc)
+
+sleep_delta = sleep_until_time - now
+
+print(f"now: {now} (local: {utc_now.astimezone()})")
+print(f"reset_time: {reset_time}")
+print(f"utc_reset_time: {utc_reset_time} (local: {utc_reset_time.astimezone()})")
+print(f"sleep_until_time: {sleep_until_time} (local: {utc_sleep_until_time.astimezone()})")
+print(f"sleep_delta: {sleep_delta}")
+print(f"sleep_delta.seconds: {sleep_delta.seconds}")
+
+print(f"sleeping for {sleep_delta.seconds} seconds, until {sleep_until_time.astimezone()}...")
+
+sleep(sleep_delta.seconds)
+
+print("Woke up and ending.")
+
+
+sys.exit()
+
+repo = github.get_repo("NixOS/nixpkgs")
+l = repo.get_issues(state="all")
+print(l[0])
+first_issue = l[0]
+
 
 print(MyEncoder().encode(IssueData.from_issue(l[6])))
 
