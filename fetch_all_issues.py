@@ -10,7 +10,7 @@ from typing import Optional
 
 # PyGithub has gotten mypy types, but it has not been released yet:
 # https://github.com/PyGithub/PyGithub/pull/1231
-from github import Github, Repository # type: ignore
+from github import Github, GithubException, Repository # type: ignore
 
 
 class MyEncoder(json.JSONEncoder):
@@ -93,7 +93,13 @@ class RateLimiter:
 
     def maybe_wait(self, buffer_amount: int = 10) -> None:
         # get the current limit
-        rate_limit = self.github.get_rate_limit()
+        try:
+            rate_limit = self.github.get_rate_limit()
+        except GithubException:
+            print(f"Got exception in RateLimiter.maybe_wait(), sleeping for 10 seconds and trying again...")
+            sleep(10)
+            return self.main_wait(buffer_amount = buffer_amount)
+
         remaining = rate_limit.core.remaining
 
         if remaining < buffer_amount:
@@ -171,13 +177,22 @@ class Fetcher:
 
     def get_issue(self, issue_num: int) -> None:
         self.rate_limiter.maybe_wait()
-        issue = self.repo.get_issue(issue_num)
+
+        try:
+            issue = self.repo.get_issue(issue_num)
+        except GithubException:
+            print(f"Got exception in Fetcher.get_issue(), sleeping for 10 seconds and trying again...")
+            sleep(10)
+            return self.get_issue(issue_num = issue_num)
+
         issue_data: IssueData = IssueData.from_issue(issue)
         if not issue_data.is_pull_request:
             self.save_issue(issue_num, issue_data)
 
     def get_issues_from(self, starting_issue_num: int) -> None:
         for issue_num in range(starting_issue_num, 0, -1):
+            if issue_num % 200 == 0:
+                print(f"Getting issue number {issue_num}...")
             self.get_issue(issue_num)
 
     def run(self) -> None:
@@ -201,7 +216,8 @@ class Fetcher:
 
 def main() -> None:
 
-    github = Github()
+    github_api_token: str = os.environ["GITHUB_API_TOKEN"]
+    github = Github(github_api_token)
 
     fetcher = Fetcher(github)
     fetcher.run()
