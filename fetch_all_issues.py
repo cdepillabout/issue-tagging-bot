@@ -85,7 +85,7 @@ class IssueData:
 
 
 class RateLimiter:
-    def __init__(self, github: Github):
+    def __init__(self, github: Github) -> None:
         self.github = github
 
     def maybe_wait(self, buffer_amount: int = 10) -> None:
