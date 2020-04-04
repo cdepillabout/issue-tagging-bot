@@ -166,5 +166,6 @@ def main() -> None:
     fetcher = Fetcher(github)
     fetcher.run()
 
+
 if __name__ == "__main__":
     main()

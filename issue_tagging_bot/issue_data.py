@@ -3,6 +3,7 @@ import os
 import sys
 from pathlib import Path
 
+
 class MyEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, LabelData):
@@ -75,6 +76,7 @@ class IssueData:
             issue.pull_request,
         )
         return issue_data
+
 
 # TODO: What is the return type of this?
 def issue_data_files(data_dir: str = "issue-data"):

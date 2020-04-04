@@ -5,9 +5,9 @@
 import pandas as pd  # type: ignore
 
 
-
 def main() -> None:
     return
+
 
 if __name__ == "__main__":
     # execute only if run as a script
