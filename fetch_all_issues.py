@@ -10,7 +10,7 @@ from typing import Optional
 
 # PyGithub has gotten mypy types, but it has not been released yet:
 # https://github.com/PyGithub/PyGithub/pull/1231
-from github import Github, GithubException, Repository # type: ignore
+from github import Github, GithubException, Repository  # type: ignore
 
 
 class MyEncoder(json.JSONEncoder):
@@ -96,9 +96,11 @@ class RateLimiter:
         try:
             rate_limit = self.github.get_rate_limit()
         except GithubException as err:
-            print(f"Got exception in RateLimiter.maybe_wait(): {err}\nsleeping for 30 seconds and trying again...\n")
+            print(
+                f"Got exception in RateLimiter.maybe_wait(): {err}\nsleeping for 30 seconds and trying again...\n"
+            )
             sleep(30)
-            return self.main_wait(buffer_amount = buffer_amount)
+            return self.main_wait(buffer_amount=buffer_amount)
 
         remaining = rate_limit.core.remaining
 
@@ -128,7 +130,12 @@ class RateLimiter:
 
 
 class Fetcher:
-    def __init__(self, github: Github, repo_str: str = "NixOS/nixpkgs", data_dir_str: str = "issue-data") -> None:
+    def __init__(
+        self,
+        github: Github,
+        repo_str: str = "NixOS/nixpkgs",
+        data_dir_str: str = "issue-data",
+    ) -> None:
         self.github = github
         self.rate_limiter = RateLimiter(github)
         self.rate_limiter.maybe_wait()
@@ -156,7 +163,9 @@ class Fetcher:
                 try:
                     issue_num: int = int(issue_num_str)
                 except ValueError:
-                    print(f"file {self.data_dir_str}/{f} does not have a file name stem readable as an int")
+                    print(
+                        f"file {self.data_dir_str}/{f} does not have a file name stem readable as an int"
+                    )
                     continue
 
                 if lowest is None or issue_num < lowest:
@@ -185,9 +194,11 @@ class Fetcher:
                 print(f"Issue not found: {issue_num}, skipping...")
                 return
             else:
-                print(f"Got exception in Fetcher.get_issue() while fetching issue number {issue_num}: {err}\nsleeping for 30 seconds and trying again...\n")
+                print(
+                    f"Got exception in Fetcher.get_issue() while fetching issue number {issue_num}: {err}\nsleeping for 30 seconds and trying again...\n"
+                )
                 sleep(30)
-                return self.get_issue(issue_num = issue_num)
+                return self.get_issue(issue_num=issue_num)
 
         issue_data: IssueData = IssueData.from_issue(issue)
         if not issue_data.is_pull_request:
@@ -201,7 +212,9 @@ class Fetcher:
 
     def run(self) -> None:
         self.create_data_dir()
-        lowest_issue_num_already_downloaded: Optional[int] = self.get_lowest_issue_num_already_downloaded()
+        lowest_issue_num_already_downloaded: Optional[
+            int
+        ] = self.get_lowest_issue_num_already_downloaded()
         start_issue_num: int
 
         if lowest_issue_num_already_downloaded is None:
@@ -215,7 +228,6 @@ class Fetcher:
         print(f"Starting with issue number: {start_issue_num}")
 
         self.get_issues_from(start_issue_num)
-
 
 
 def main() -> None:
