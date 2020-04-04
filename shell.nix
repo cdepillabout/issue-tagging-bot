@@ -13,6 +13,8 @@ with nixpkgs;
 
 let
   pythonEnv = python37.withPackages (ps: with ps; [
+    numpy
+    pandas
     PyGithub
 
     # dev tools

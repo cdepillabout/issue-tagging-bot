@@ -100,7 +100,7 @@ class RateLimiter:
                 f"Got exception in RateLimiter.maybe_wait(): {err}\nsleeping for 30 seconds and trying again...\n"
             )
             sleep(30)
-            return self.main_wait(buffer_amount=buffer_amount)
+            return self.maybe_wait(buffer_amount=buffer_amount)
 
         remaining = rate_limit.core.remaining
 
@@ -251,5 +251,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    # execute only if run as a script
     main()
