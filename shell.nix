@@ -19,6 +19,7 @@ let
 
     # dev tools
     black
+    ipython
     mypy
   ]);
 in
