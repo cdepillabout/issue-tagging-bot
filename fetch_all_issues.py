@@ -95,9 +95,9 @@ class RateLimiter:
         # get the current limit
         try:
             rate_limit = self.github.get_rate_limit()
-        except GithubException:
-            print(f"Got exception in RateLimiter.maybe_wait(), sleeping for 10 seconds and trying again...")
-            sleep(10)
+        except GithubException as err:
+            print(f"Got exception in RateLimiter.maybe_wait(): {err}\nsleeping for 30 seconds and trying again...\n")
+            sleep(30)
             return self.main_wait(buffer_amount = buffer_amount)
 
         remaining = rate_limit.core.remaining
@@ -180,10 +180,14 @@ class Fetcher:
 
         try:
             issue = self.repo.get_issue(issue_num)
-        except GithubException:
-            print(f"Got exception in Fetcher.get_issue(), sleeping for 10 seconds and trying again...")
-            sleep(10)
-            return self.get_issue(issue_num = issue_num)
+        except GithubException as err:
+            if err.status == 404:
+                print(f"Issue not found: {issue_num}, skipping...")
+                return
+            else:
+                print(f"Got exception in Fetcher.get_issue() while fetching issue number {issue_num}: {err}\nsleeping for 30 seconds and trying again...\n")
+                sleep(30)
+                return self.get_issue(issue_num = issue_num)
 
         issue_data: IssueData = IssueData.from_issue(issue)
         if not issue_data.is_pull_request:
