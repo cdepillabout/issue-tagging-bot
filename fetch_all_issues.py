@@ -238,17 +238,5 @@ def main() -> None:
     fetcher = Fetcher(github)
     fetcher.run()
 
-    # repo: Repository = github.get_repo("NixOS/nixpkgs")
-    # l = repo.get_issues(state="all")
-    # print(l[0])
-    # first_issue = l[0]
-
-    # print(MyEncoder().encode(IssueData.from_issue(l[6])))
-
-    # for i in l:
-    #     print()
-    #     print(MyEncoder().encode(IssueData.from_issue(i)))
-
-
 if __name__ == "__main__":
     main()
