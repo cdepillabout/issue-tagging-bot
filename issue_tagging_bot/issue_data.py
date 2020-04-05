@@ -11,6 +11,7 @@ from github import Issue  # type: ignore
 # to be being worked on...
 import pandas as pd  # type: ignore
 
+
 class MyEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, LabelData):
@@ -85,8 +86,7 @@ class IssueData:
         return issue_data
 
 
-
-def issue_data_files(data_dir: str = "issue-data") -> Iterator[Tuple[int,Path]]:
+def issue_data_files(data_dir: str = "issue-data") -> Iterator[Tuple[int, Path]]:
     # loop over all the files in the data directory
     for f in sorted(os.listdir(data_dir)):
 
@@ -108,14 +108,17 @@ def issue_data_files(data_dir: str = "issue-data") -> Iterator[Tuple[int,Path]]:
             # TODO: Should probably use actual path manipulation functions for this.
             yield issue_num, Path(f"{data_dir}/{f}")
 
+
 def issue_data_raws(data_dir: str = "issue-data") -> Iterator[str]:
     for path, _ in issue_data_files(data_dir):
         with open(path, "r") as f:
             yield f.read()
 
+
 def issue_data_frames(data_dir: str = "issue-data") -> Iterator[pd.DataFrame]:
     for raw_json in issue_data_raws(data_dir):
         yield pd.read_json(f"[{raw_json}]", orient="records")
+
 
 def issue_data_frame(data_dir: str = "issue-data") -> pd.DataFrame:
     print("about to append all raws json strings at {datetime.now()}...")
