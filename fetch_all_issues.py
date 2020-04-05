@@ -10,7 +10,8 @@ from typing import Optional
 
 # PyGithub has gotten mypy types, but it has not been released yet:
 # https://github.com/PyGithub/PyGithub/pull/1231
-from github import Github, GithubException, Issue, Repository  # type: ignore
+from github import Github, GithubException, Repository  # type: ignore
+from github.Issue import Issue  # type: ignore
 
 from issue_tagging_bot.issue_data import IssueData, MyEncoder, issue_data_files
 
@@ -102,7 +103,7 @@ class Fetcher:
             self.save_issue(issue_num, issue_data)
 
     def get_issue_data(self, issue_num: int) -> Optional[IssueData]:
-        issue = self.get_issue(issue_num)
+        issue: Optional[Issue] = self.get_issue(issue_num)
         if issue is not None:
             return IssueData.from_issue(issue)
         return None
@@ -111,7 +112,7 @@ class Fetcher:
         self.rate_limiter.maybe_wait()
 
         try:
-            issue = self.repo.get_issue(issue_num)
+            issue: Issue = self.repo.get_issue(issue_num)
         except GithubException as err:
             if err.status == 404:
                 print(f"Issue not found: {issue_num}, skipping...")
