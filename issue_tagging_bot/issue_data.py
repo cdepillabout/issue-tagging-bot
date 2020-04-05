@@ -6,9 +6,6 @@ from pathlib import Path
 from typing import Iterator, List, Tuple
 
 from github import Issue  # type: ignore
-
-# Pandas doesn't export any sort of type annotations yet, although it appears
-# to be being worked on...
 import pandas as pd  # type: ignore
 
 
@@ -110,7 +107,7 @@ def issue_data_files(data_dir: str = "issue-data") -> Iterator[Tuple[int, Path]]
 
 
 def issue_data_raws(data_dir: str = "issue-data") -> Iterator[str]:
-    for path, _ in issue_data_files(data_dir):
+    for _, path in issue_data_files(data_dir):
         with open(path, "r") as f:
             yield f.read()
 
@@ -121,10 +118,7 @@ def issue_data_frames(data_dir: str = "issue-data") -> Iterator[pd.DataFrame]:
 
 
 def issue_data_frame(data_dir: str = "issue-data") -> pd.DataFrame:
-    print("about to append all raws json strings at {datetime.now()}...")
     all_raws = ",".join(issue_data_raws(data_dir))
-    print("about to append [ and ] to the combined json string at {datetime.now()}...")
     final_raw_str = f"[{all_raws}]"
-    print("about to convert final raw json string to DataFrame at {datetime.now()}...")
     all_data: pd.DataFrame = pd.read_json(final_raw_str, orient="records")
     return all_data

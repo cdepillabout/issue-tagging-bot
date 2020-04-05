@@ -16,6 +16,7 @@ let
     numpy
     pandas
     PyGithub
+    scikitlearn
 
     # dev tools
     black

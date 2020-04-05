@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import json
 import os
@@ -97,13 +97,17 @@ class Fetcher:
             f.write(issue_data_json)
 
     def get_issue_data_and_save_to_file(self, issue_num: int) -> None:
-        issue_data: IssueData = self.get_issue_data(issue_num)
-        self.save_issue(issue_num, issue_data)
+        issue_data: Optional[IssueData] = self.get_issue_data(issue_num)
+        if issue_data is not None:
+            self.save_issue(issue_num, issue_data)
 
-    def get_issue_data(self, issue_num: int) -> IssueData:
-        return IssueData.from_issue(self.get_issue(issue_num))
+    def get_issue_data(self, issue_num: int) -> Optional[IssueData]:
+        issue = self.get_issue(issue_num)
+        if issue is not None:
+            return IssueData.from_issue(issue)
+        return None
 
-    def get_issue(self, issue_num: int) -> Issue:
+    def get_issue(self, issue_num: int) -> Optional[Issue]:
         self.rate_limiter.maybe_wait()
 
         try:
@@ -111,7 +115,7 @@ class Fetcher:
         except GithubException as err:
             if err.status == 404:
                 print(f"Issue not found: {issue_num}, skipping...")
-                return
+                return None
             else:
                 print(
                     f"Got exception in Fetcher.get_issue() while fetching issue number {issue_num}: {err}\nsleeping for 30 seconds and trying again...\n"
