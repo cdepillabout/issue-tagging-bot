@@ -1,9 +1,15 @@
 import json
 import os
 import sys
+from datetime import datetime
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, List, Tuple
 
+from github import Issue  # type: ignore
+
+# Pandas doesn't export any sort of type annotations yet, although it appears
+# to be being worked on...
+import pandas as pd  # type: ignore
 
 class MyEncoder(json.JSONEncoder):
     def default(self, o):
@@ -56,10 +62,10 @@ class IssueData:
         self.closed_at = None if closed_at is None else str(closed_at)
         self.created_at = None if created_at is None else str(created_at)
         self.updated_at = None if updated_at is None else str(updated_at)
-        self.is_pull_request = pull_request is None
+        self.is_issue = pull_request is None
 
     @classmethod
-    def from_issue(cls, issue):
+    def from_issue(cls, issue: Issue):
         issue_data = cls(
             issue.id,
             issue.url,
@@ -79,8 +85,8 @@ class IssueData:
         return issue_data
 
 
-# TODO: What is the return type of this?
-def issue_data_files(data_dir: str = "issue-data") -> Iterator[str]:
+
+def issue_data_files(data_dir: str = "issue-data") -> Iterator[Tuple[int,Path]]:
     # loop over all the files in the data directory
     for f in sorted(os.listdir(data_dir)):
 
@@ -100,4 +106,22 @@ def issue_data_files(data_dir: str = "issue-data") -> Iterator[str]:
                 continue
 
             # TODO: Should probably use actual path manipulation functions for this.
-            yield f"{data_dir}/{f}"
+            yield issue_num, Path(f"{data_dir}/{f}")
+
+def issue_data_raws(data_dir: str = "issue-data") -> Iterator[str]:
+    for path, _ in issue_data_files(data_dir):
+        with open(path, "r") as f:
+            yield f.read()
+
+def issue_data_frames(data_dir: str = "issue-data") -> Iterator[pd.DataFrame]:
+    for raw_json in issue_data_raws(data_dir):
+        yield pd.read_json(f"[{raw_json}]", orient="records")
+
+def issue_data_frame(data_dir: str = "issue-data") -> pd.DataFrame:
+    print("about to append all raws json strings at {datetime.now()}...")
+    all_raws = ",".join(issue_data_raws(data_dir))
+    print("about to append [ and ] to the combined json string at {datetime.now()}...")
+    final_raw_str = f"[{all_raws}]"
+    print("about to convert final raw json string to DataFrame at {datetime.now()}...")
+    all_data: pd.DataFrame = pd.read_json(final_raw_str, orient="records")
+    return all_data

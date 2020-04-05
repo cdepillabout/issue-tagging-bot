@@ -10,9 +10,9 @@ from typing import Optional
 
 # PyGithub has gotten mypy types, but it has not been released yet:
 # https://github.com/PyGithub/PyGithub/pull/1231
-from github import Github, GithubException, Repository  # type: ignore
+from github import Github, GithubException, Issue, Repository  # type: ignore
 
-from issue_tagging_bot.issue_data import IssueData, MyEncoder
+from issue_tagging_bot.issue_data import IssueData, MyEncoder, issue_data_files
 
 
 class RateLimiter:
@@ -79,25 +79,9 @@ class Fetcher:
         lowest: Optional[int] = None
 
         # loop over all the files in the data directory
-        for f in os.listdir(self.data_dir_str):
-
-            # only look at files that have a .json extension
-            if f.endswith(".json"):
-
-                # only use the part of the filename that is before the .json extension
-                issue_num_str: str = Path(f).stem
-
-                # try to parse the issue number as an int from the filename.
-                try:
-                    issue_num: int = int(issue_num_str)
-                except ValueError:
-                    print(
-                        f"file {self.data_dir_str}/{f} does not have a file name stem readable as an int"
-                    )
-                    continue
-
-                if lowest is None or issue_num < lowest:
-                    lowest = issue_num
+        for issue_num, _ in issue_data_files(self.data_dir_str):
+            if lowest is None or issue_num < lowest:
+                lowest = issue_num
 
         return lowest
 
@@ -112,7 +96,15 @@ class Fetcher:
         with path.open(mode="w") as f:
             f.write(issue_data_json)
 
-    def get_issue(self, issue_num: int) -> None:
+    def get_issue_data_and_save_to_file(self, issue_num: int) -> None:
+        issue_data: IssueData = self.get_issue_data(issue_num)
+        if issue_data.is_issue:
+            self.save_issue(issue_num, issue_data)
+
+    def get_issue_data(self, issue_num: int) -> IssueData:
+        return IssueData.from_issue(self.get_issue(issue_num))
+
+    def get_issue(self, issue_num: int) -> Issue:
         self.rate_limiter.maybe_wait()
 
         try:
@@ -128,15 +120,19 @@ class Fetcher:
                 sleep(30)
                 return self.get_issue(issue_num=issue_num)
 
-        issue_data: IssueData = IssueData.from_issue(issue)
-        if not issue_data.is_pull_request:
-            self.save_issue(issue_num, issue_data)
+        return issue
 
     def get_issues_from(self, starting_issue_num: int) -> None:
         for issue_num in range(starting_issue_num, 0, -1):
             if issue_num % 200 == 0:
                 print(f"Getting issue number {issue_num}...")
-            self.get_issue(issue_num)
+            self.get_issue_data_and_save_to_file(issue_num)
+
+    @classmethod
+    def from_env(cls):
+        github_api_token: str = os.environ["GITHUB_API_TOKEN"]
+        github = Github(github_api_token)
+        return cls(github)
 
     def run(self) -> None:
         self.create_data_dir()
@@ -159,11 +155,7 @@ class Fetcher:
 
 
 def main() -> None:
-
-    github_api_token: str = os.environ["GITHUB_API_TOKEN"]
-    github = Github(github_api_token)
-
-    fetcher = Fetcher(github)
+    fetcher = Fetcher.from_env()
     fetcher.run()
 
 
