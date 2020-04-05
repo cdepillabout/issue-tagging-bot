@@ -98,8 +98,7 @@ class Fetcher:
 
     def get_issue_data_and_save_to_file(self, issue_num: int) -> None:
         issue_data: IssueData = self.get_issue_data(issue_num)
-        if issue_data.is_issue:
-            self.save_issue(issue_num, issue_data)
+        self.save_issue(issue_num, issue_data)
 
     def get_issue_data(self, issue_num: int) -> IssueData:
         return IssueData.from_issue(self.get_issue(issue_num))
