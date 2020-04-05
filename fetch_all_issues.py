@@ -105,7 +105,7 @@ class Fetcher:
         Path(self.data_dir_str).mkdir(parents=True, exist_ok=True)
 
     def save_issue(self, issue_num: int, issue_data: IssueData) -> None:
-        path = Path(self.data_dir_str) / f"{issue_num}.json"
+        path = Path(self.data_dir_str) / f"{issue_num:06}.json"
 
         issue_data_json = MyEncoder().encode(issue_data)
 

@@ -2,6 +2,7 @@ import json
 import os
 import sys
 from pathlib import Path
+from typing import Iterator
 
 
 class MyEncoder(json.JSONEncoder):
@@ -79,9 +80,9 @@ class IssueData:
 
 
 # TODO: What is the return type of this?
-def issue_data_files(data_dir: str = "issue-data"):
+def issue_data_files(data_dir: str = "issue-data") -> Iterator[str]:
     # loop over all the files in the data directory
-    for f in os.listdir(data_dir):
+    for f in sorted(os.listdir(data_dir)):
 
         # only look at files that have a .json extension
         if f.endswith(".json"):
