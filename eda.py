@@ -6,8 +6,28 @@ from sklearn.preprocessing import MultiLabelBinarizer  # type: ignore
 
 from issue_tagging_bot.issue_data import issue_data_frame
 
-def only_topics():
-    only_issues_with_labels = issues_with_topics()
+def top_n_topics(n=10, sorted_topic_totals=None):
+    if sorted_topic_totals is None:
+        sorted_topic_totals = topic_totals()
+
+    return sorted_topic_totals[- n:]
+
+def topic_totals(all_topics=None):
+    if all_topics is None:
+        all_topics = only_topics()
+
+    return all_topics.sum().sort_values(0)
+
+def top_n_topics(n=10, all_topics=None):
+    if all_topics is None:
+        all_topics = only_topics()
+
+    return all_topics.sum().sort_values(0)[- n:]
+
+def only_topics(only_issues_with_labels=None):
+    if only_issues_with_labels is None:
+        only_issues_with_labels = issues_with_topics()
+
     return only_issues_with_labels.iloc[:, 14:]
 
 def issues_with_topics():
