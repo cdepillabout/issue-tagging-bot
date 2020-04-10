@@ -82,43 +82,70 @@ class IssueData:
         )
         return issue_data
 
+class IssueFiles:
+    """
+    This class contains helpful functions for operating on the issue data that
+    has been downloaded from GitHub.  The most important function is
+    issue_data_frame, which returns a DataFrame containing the data from all
+    downloaded issues (not PRs).
+    """
+    def __init__(self, data_dir: str = "issue-data") -> None:
+        self.data_dir = data_dir
 
-def issue_data_files(data_dir: str = "issue-data") -> Iterator[Tuple[int, Path]]:
-    # loop over all the files in the data directory
-    for f in sorted(os.listdir(data_dir)):
+    def files(self) -> Iterator[Tuple[int, Path]]:
+        """
+        Return an iterator containing tuples of issue numbers and paths to the
+        json file for that issue.
+        """
+        # loop over all the files in the data directory
+        for f in sorted(os.listdir(self.data_dir)):
 
-        # only look at files that have a .json extension
-        if f.endswith(".json"):
+            # only look at files that have a .json extension
+            if f.endswith(".json"):
 
-            # only use the part of the filename that is before the .json extension
-            issue_num_str: str = Path(f).stem
+                # only use the part of the filename that is before the .json extension
+                issue_num_str: str = Path(f).stem
 
-            # try to parse the issue number as an int from the filename.
-            try:
-                issue_num: int = int(issue_num_str)
-            except ValueError:
-                print(
-                    f"file {data_dir}/{f} does not have a file name stem readable as an int"
-                )
-                continue
+                # try to parse the issue number as an int from the filename.
+                try:
+                    issue_num: int = int(issue_num_str)
+                except ValueError:
+                    print(
+                        f"file {self.data_dir}/{f} does not have a file name stem readable as an int"
+                    )
+                    continue
 
-            # TODO: Should probably use actual path manipulation functions for this.
-            yield issue_num, Path(f"{data_dir}/{f}")
+                # TODO: Should probably use actual path manipulation functions for this.
+                yield issue_num, Path(f"{self.data_dir}/{f}")
 
+    def raws(self) -> Iterator[str]:
+        """
+        Return an iterator of raw json files for each issue.
+        """
+        for _, path in self.files():
+            with open(path, "r") as f:
+                yield f.read()
 
-def issue_data_raws(data_dir: str = "issue-data") -> Iterator[str]:
-    for _, path in issue_data_files(data_dir):
-        with open(path, "r") as f:
-            yield f.read()
+    def data_frames(self) -> Iterator[pd.DataFrame]:
+        """
+        Return a DataFrame for each raw json issue.
+        """
+        for raw_json in self.raws():
+            yield pd.read_json(f"[{raw_json}]", orient="records")
 
+    def data_frame(self) -> pd.DataFrame:
+        """
+        Return a single dataframe containing info from all issues.
+        """
+        all_raws = ",".join(self.raws())
+        final_raw_str = f"[{all_raws}]"
+        all_data: pd.DataFrame = pd.read_json(final_raw_str, orient="records")
+        return all_data
 
-def issue_data_frames(data_dir: str = "issue-data") -> Iterator[pd.DataFrame]:
-    for raw_json in issue_data_raws(data_dir):
-        yield pd.read_json(f"[{raw_json}]", orient="records")
+    def issues_data_frame(self) -> pd.DataFrame:
+        """
+        Return a single dataframe containing data ONLY from issues (not PRs).
+        """
+        all_issues = self.data_frame()
+        return all_issues[all_issues.is_issue]
 
-
-def issue_data_frame(data_dir: str = "issue-data") -> pd.DataFrame:
-    all_raws = ",".join(issue_data_raws(data_dir))
-    final_raw_str = f"[{all_raws}]"
-    all_data: pd.DataFrame = pd.read_json(final_raw_str, orient="records")
-    return all_data

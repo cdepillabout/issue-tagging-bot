@@ -13,7 +13,7 @@ from typing import Optional
 from github import Github, GithubException, Repository  # type: ignore
 from github.Issue import Issue  # type: ignore
 
-from issue_tagging_bot.issue_data import IssueData, MyEncoder, issue_data_files
+from issue_tagging_bot.issue_data import IssueData, IssueFiles, MyEncoder
 
 
 class RateLimiter:
@@ -70,6 +70,7 @@ class Fetcher:
         self.rate_limiter.maybe_wait()
         self.repo: Repository = github.get_repo(repo_str)
         self.data_dir_str = data_dir_str
+        self.issue_files = IssueFiles(data_dir_str)
 
     def get_highest_issue_num(self) -> int:
         self.rate_limiter.maybe_wait()
@@ -80,7 +81,7 @@ class Fetcher:
         lowest: Optional[int] = None
 
         # loop over all the files in the data directory
-        for issue_num, _ in issue_data_files(self.data_dir_str):
+        for issue_num, _ in self.issue_files.files():
             if lowest is None or issue_num < lowest:
                 lowest = issue_num
 

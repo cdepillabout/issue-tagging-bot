@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-import numpy as np
+import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 from sklearn.preprocessing import MultiLabelBinarizer  # type: ignore
 
-from issue_tagging_bot.issue_data import issue_data_frame
+from issue_tagging_bot.issue_data import IssueFiles
 
 def top_n_topics(n=10, sorted_topic_totals=None):
     if sorted_topic_totals is None:
@@ -18,12 +18,6 @@ def topic_totals(all_topics=None):
 
     return all_topics.sum().sort_values(0)
 
-def top_n_topics(n=10, all_topics=None):
-    if all_topics is None:
-        all_topics = only_topics()
-
-    return all_topics.sum().sort_values(0)[- n:]
-
 def only_topics(only_issues_with_labels=None):
     if only_issues_with_labels is None:
         only_issues_with_labels = issues_with_topics()
@@ -36,9 +30,12 @@ def issues_with_topics():
     return only_issues_with_labels
 
 def main():
-    all_issue_data = issue_data_frame()
+    issue_files = IssueFiles()
 
-    only_issues = all_issue_data[all_issue_data.is_issue]
+    # Get a single dataframe with only issues data.
+    only_issues = issue_files.issues_data_frame()
+
+    # Create a series that has the labels on each issue.
     label_series: pd.Series = only_issues.labels.apply(lambda val: set(map(lambda l: l["name"], val)))
 
     mlb = MultiLabelBinarizer()
