@@ -6,7 +6,11 @@ let
     sha256 = "sha256:0aw6rw4r13jij8hn27z2pbilvwzcpvaicc59agqznmr2bd2742xl";
   };
 
-  nixpkgs = import nixpkgs-src {};
+
+  # allowUnfree needs to be set because pytorch is mistakingly evaluating mkl,
+  # which is non-free.
+  # https://github.com/NixOS/nixpkgs/issues/85053
+  nixpkgs = import nixpkgs-src { config = { allowUnfree = true; }; };
 in
 
 with nixpkgs;
@@ -16,6 +20,7 @@ let
     numpy
     pandas
     PyGithub
+    pytorch
     scikitlearn
 
     # dev tools
