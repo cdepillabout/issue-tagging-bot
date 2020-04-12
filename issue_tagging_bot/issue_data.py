@@ -253,3 +253,14 @@ class Stage1PreprocData:
         Returns a `Series` of shape (n,).
         """
         return self.topic_totals()[-n:]
+
+class Stage2PreprocData:
+    """
+    This is the second stage of preprocessing the issue data.
+
+    This takes the Stage1PreprocData and turns it into raw floats that we can
+    operate on.
+    """
+
+    def __init__(self) -> None:
+        self.stage1 = Stage1PreprocData()

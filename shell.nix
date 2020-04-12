@@ -6,28 +6,30 @@ let
     sha256 = "sha256:0aw6rw4r13jij8hn27z2pbilvwzcpvaicc59agqznmr2bd2742xl";
   };
 
-
-  # allowUnfree needs to be set because pytorch is mistakingly evaluating mkl,
-  # which is non-free.
-  # https://github.com/NixOS/nixpkgs/issues/85053
   nixpkgs = import nixpkgs-src { config = { allowUnfree = true; }; };
 in
 
 with nixpkgs;
 
 let
-  pythonEnv = python37.withPackages (ps: with ps; [
-    numpy
-    pandas
-    PyGithub
-    pytorch
-    scikitlearn
+  pythonEnv = python37.buildEnv.override {
+    extraLibs = with python37Packages; [
+      numpy
+      pandas
+      PyGithub
+      scikitlearn
+      tensorflow-bin
 
-    # dev tools
-    black
-    ipython
-    mypy
-  ]);
+      # dev tools
+      black
+      ipython
+      mypy
+    ];
+
+    # There is a collision in tensorboard and tensorflow, because they both try
+    # to install the tensorboard binary.
+    ignoreCollisions = true;
+  };
 in
 pythonEnv.env
 
