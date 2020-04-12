@@ -6,6 +6,8 @@ from pathlib import Path
 from typing import Iterator, List, Tuple
 
 from github import Issue  # type: ignore
+from sklearn.preprocessing import MultiLabelBinarizer  # type: ignore
+import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 
 
@@ -153,3 +155,89 @@ class IssueFiles:
         all_issues = self.data_frame()
         return all_issues[all_issues.is_issue]
 
+class Stage1PreprocData:
+    """
+    This is the first stage of prepocessing the issue data.  The topic labels
+    we care about are pulled out into one-hot-encoded columns.
+    """
+
+    def __init__(self) -> None:
+        issue_files = IssueFiles()
+
+        # Get a single dataframe with only issues data.
+        only_issues: pd.DataFrame = issue_files.issues_data_frame()
+
+        # Create a series that has the labels on each issue.  This returns a Series
+        # that is NUM_LABELS long (normally around 100 labels).
+        label_series: pd.Series = only_issues.labels.apply(lambda val: set(map(lambda l: l["name"], val)))
+
+        mlb: MultiLabelBinarizer = MultiLabelBinarizer()
+
+        # This is a one-hot-encoded numpy array with ones for each label.  This is
+        # of size (NUM_ISSUES, NUM_LABELS).  Normally around (15000, 100).
+        one_hot_labels: np.ndarray = mlb.fit_transform(label_series)
+
+        # This is a boolean array with True for each label that starts with "6.".
+        # These are the topic labels we want to be able to predict, like "Haskell",
+        # "QT", "Rust", etc.  This is of shape (NUM_LABELS,).
+        topic_label_selector: np.ndarray = np.char.startswith(mlb.classes_.astype(str), "6.")
+
+        # This is a string array that contains only the labels that start with
+        # "6.".  This is of shape (NUM_TOPIC_LABELS,).  Normally around (50,).
+        topic_classes: np.ndarray =  mlb.classes_[topic_label_selector]
+
+        # This is a one-hot array with a 1 for each issue that has a given
+        # topic-label.  This is of shape (NUM_ISSUES, NUM_TOPIC_LABELS).  Normally
+        # around (15000, 50).
+        topic_labels: np.ndarray = one_hot_labels[:, topic_label_selector]
+
+        # A DataFrame where the rows are all an index from 0 to NUM_ISSUES, and the columns are
+        # topic labels.  This is of shape (NUM_ISSUES, NUM_TOPIC_LABELS).  Normally
+        # around (15000, 50).
+        topics: pd.DataFrame = pd.DataFrame(data=topic_labels, columns=topic_classes)
+
+        # A list of indicies of only the issues.
+        only_issues_indicies: pd.Int64Index = only_issues.index
+
+        # This is the same as topics above, but the indicies are the indicies of
+        # the actual issues on GitHub (not 0 to NUM_ISSUES).
+        topics: pd.DataFrame = topics.set_index(only_issues_indicies)
+
+        # This is the same as only_issues, but it has all the one-hot-encoded
+        # topic labels as columns as well.
+        only_issues_with_labels: pd.DataFrame = pd.concat([only_issues, topics], axis="columns")
+
+        self.only_issues: pd.DataFrame = only_issues
+        self.topic_classes: np.ndarray = topic_classes
+        self.topics: pd.DataFrame = topics
+        self.only_issues_with_labels: pd.DataFrame = only_issues_with_labels
+
+    def only_topics(self) -> pd.DataFrame:
+        """
+        Return only the columns in the `only_issues` DataFrame that are topic
+        labels.
+
+        Returns a DataFrame of shape (NUM_ISSUES, NUM_TOPIC_LABELS).
+        Normally around (15000, 50).
+
+        The row indicies are issue numbers on GitHub (not 0...15000).
+        """
+        # TODO: Don't hardcode 14 here, but calculate it from self.only_issues
+        return self.only_issues_with_labels.iloc[:, 14:]
+
+    def topic_totals(self) -> pd.Series:
+        """
+        Return the totals for each topic labels.  This allows you to quickly see
+        which topic labels are the most used.
+
+        Returns a `Series` of shape (NUM_TOPIC_LABELS,).
+        """
+        return self.only_topics().sum().sort_values(0)
+
+    def top_n_topics(self, n=15) -> pd.DataFrame:
+        """
+        Returns only the top `n` values of `self.topic_totals()`.
+
+        Returns a `Series` of shape (n,).
+        """
+        return self.topic_totals()[-n:]
