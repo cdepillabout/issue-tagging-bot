@@ -84,6 +84,7 @@ class IssueData:
         )
         return issue_data
 
+
 class IssueFiles:
     """
     This class contains helpful functions for operating on the issue data that
@@ -91,6 +92,7 @@ class IssueFiles:
     issue_data_frame, which returns a DataFrame containing the data from all
     downloaded issues (not PRs).
     """
+
     def __init__(self, data_dir: str = "issue-data") -> None:
         self.data_dir = data_dir
 
@@ -155,6 +157,7 @@ class IssueFiles:
         all_issues = self.data_frame()
         return all_issues[all_issues.is_issue]
 
+
 class Stage1PreprocData:
     """
     This is the first stage of prepocessing the issue data.  The topic labels
@@ -171,7 +174,9 @@ class Stage1PreprocData:
 
         # Create a series that has the labels on each issue.  This returns a Series
         # that is NUM_LABELS long (normally around 100 labels).
-        label_series: pd.Series = only_issues.labels.apply(lambda val: set(map(lambda l: l["name"], val)))
+        label_series: pd.Series = only_issues.labels.apply(
+            lambda val: set(map(lambda l: l["name"], val))
+        )
 
         mlb: MultiLabelBinarizer = MultiLabelBinarizer()
 
@@ -182,11 +187,13 @@ class Stage1PreprocData:
         # This is a boolean array with True for each label that starts with "6.".
         # These are the topic labels we want to be able to predict, like "Haskell",
         # "QT", "Rust", etc.  This is of shape (NUM_LABELS,).
-        topic_label_selector: np.ndarray = np.char.startswith(mlb.classes_.astype(str), "6.")
+        topic_label_selector: np.ndarray = np.char.startswith(
+            mlb.classes_.astype(str), "6."
+        )
 
         # This is a string array that contains only the labels that start with
         # "6.".  This is of shape (NUM_TOPIC_LABELS,).  Normally around (50,).
-        topic_classes: np.ndarray =  mlb.classes_[topic_label_selector]
+        topic_classes: np.ndarray = mlb.classes_[topic_label_selector]
 
         # This is a one-hot array with a 1 for each issue that has a given
         # topic-label.  This is of shape (NUM_ISSUES, NUM_TOPIC_LABELS).  Normally
@@ -208,7 +215,9 @@ class Stage1PreprocData:
 
         # This is the same as only_issues, but it has all the one-hot-encoded
         # topic labels as columns as well.
-        only_issues_with_labels: pd.DataFrame = pd.concat([only_issues, topics], axis="columns")
+        only_issues_with_labels: pd.DataFrame = pd.concat(
+            [only_issues, topics], axis="columns"
+        )
 
         self.only_issues: pd.DataFrame = only_issues
         self.topic_classes: np.ndarray = topic_classes

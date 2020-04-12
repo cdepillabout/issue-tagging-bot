@@ -6,8 +6,10 @@ from sklearn.preprocessing import MultiLabelBinarizer  # type: ignore
 
 from issue_tagging_bot.issue_data import IssueFiles
 
+
 def main() -> None:
     stage_1_preproc = Stage1PreprocData()
+
 
 if __name__ == "__main__":
     main()
