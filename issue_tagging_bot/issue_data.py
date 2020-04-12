@@ -165,6 +165,8 @@ class Stage1PreprocData:
         issue_files = IssueFiles()
 
         # Get a single dataframe with only issues data.
+        # The row indicies are non-sequential, and sort of correspond to
+        # issues numbers on GitHub, but are slightly different.
         only_issues: pd.DataFrame = issue_files.issues_data_frame()
 
         # Create a series that has the labels on each issue.  This returns a Series
@@ -191,16 +193,17 @@ class Stage1PreprocData:
         # around (15000, 50).
         topic_labels: np.ndarray = one_hot_labels[:, topic_label_selector]
 
-        # A DataFrame where the rows are all an index from 0 to NUM_ISSUES, and the columns are
-        # topic labels.  This is of shape (NUM_ISSUES, NUM_TOPIC_LABELS).  Normally
-        # around (15000, 50).
+        # A DataFrame where the rows are all an index from 0 to NUM_ISSUES, and
+        # the columns are topic labels.  This is of shape (NUM_ISSUES,
+        # NUM_TOPIC_LABELS).  Normally around (15000, 50).
         topics: pd.DataFrame = pd.DataFrame(data=topic_labels, columns=topic_classes)
 
         # A list of indicies of only the issues.
         only_issues_indicies: pd.Int64Index = only_issues.index
 
-        # This is the same as topics above, but the indicies are the indicies of
-        # the actual issues on GitHub (not 0 to NUM_ISSUES).
+        # This is the same as topics above, but the indicies are almost the indicies of
+        # the actual issues on GitHub (not 0 to NUM_ISSUES), but are slightly off in
+        # certain cases.
         topics: pd.DataFrame = topics.set_index(only_issues_indicies)
 
         # This is the same as only_issues, but it has all the one-hot-encoded
