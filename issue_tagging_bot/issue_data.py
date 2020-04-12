@@ -145,6 +145,10 @@ class IssueFiles:
     def issues_data_frame(self) -> pd.DataFrame:
         """
         Return a single dataframe containing data ONLY from issues (not PRs).
+
+        This returns a dataframe of shape (NUM_ISSUES, 14).
+
+        The row indicies are issue numbers (so they do not go from 1...NUM_ISSUES).
         """
         all_issues = self.data_frame()
         return all_issues[all_issues.is_issue]
