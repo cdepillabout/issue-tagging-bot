@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
-import torch
-
+from issue_tagging_bot.issue_data import Stage1PreprocData, Stage2PreprocData
 
 def main() -> None:
 
-    model = torch.nn.Sequential(
-        torch.nn.Linear(D_in, H), torch.nn.ReLU(), torch.nn.Linear(H, D_out),
-    )
+    stage1 = Stage1PreprocData()
+
+    return stage1
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ from github import Issue  # type: ignore
 from sklearn.preprocessing import MultiLabelBinarizer  # type: ignore
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
+import tensorflow as tf  # type: ignore
 
 
 class MyEncoder(json.JSONEncoder):
@@ -232,7 +233,7 @@ class Stage1PreprocData:
         Returns a DataFrame of shape (NUM_ISSUES, NUM_TOPIC_LABELS).
         Normally around (15000, 50).
 
-        The row indicies are issue numbers on GitHub (not 0...15000).
+        The row indicies are sort of (but not exactly) issue numbers on GitHub (not 0...15000).
         """
         # TODO: Don't hardcode 14 here, but calculate it from self.only_issues
         return self.only_issues_with_labels.iloc[:, 14:]
@@ -262,5 +263,38 @@ class Stage2PreprocData:
     operate on.
     """
 
-    def __init__(self) -> None:
-        self.stage1 = Stage1PreprocData()
+    def __init__(self, stage1: pd.DataFrame = None, input_text_len: int = 1000, top_n_topics: int = 15) -> None:
+        self.stage1 = Stage1PreprocData() if stage1 is None else stage1
+        self.input_text_len = input_text_len
+        self.top_n_topics = top_n_topics
+
+    def process(self) -> (pd.DataFrame, pd.DataFrame):
+        """
+        Return the input data and labels.
+
+        X is a `DataFrame` of input data with one column for the issue number,
+        and then one column that is the username, issue title, and issue body,
+        chopped to the first 1000 characters.
+
+        Y is a `DataFrame` of one-hot-encoded topic labels.
+        """
+        def create_input_text(row: pd.Series) -> pd.Series:
+            # print(type(row))
+            author = row["user_login"]
+            title = row["title"]
+            body = row["body"]
+            issue_num = row["number"]
+            return pd.Series([issue_num, f"{author}\n{title}\n{body}"[:self.input_text_len]], index=["issue_num", "issue_text"])
+
+        X: pd.Series = self.stage1.only_issues.apply(create_input_text, axis=1)
+        Y: pd.DataFrame = self.stage1.only_topics()[self.stage1.top_n_topics(self.top_n_topics).index]
+
+        return X, Y
+
+    def to_tf(self) -> tf.data.Dataset:
+        X, Y = self.process()
+
+        dataset = tf.data.Dataset.from_tensor_slices((X.values, Y.values))
+
+        return dataset
+
