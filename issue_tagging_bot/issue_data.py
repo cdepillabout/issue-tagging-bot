@@ -294,7 +294,29 @@ class Stage2PreprocData:
     def to_tf(self) -> tf.data.Dataset:
         X, Y = self.process()
 
-        dataset = tf.data.Dataset.from_tensor_slices((X.values, Y.values))
+        # dataset = tf.data.Dataset.from_tensor_slices((X.values, Y.values))
 
-        return dataset
+        issue_body = X.iloc[:, 1]
+
+        num_issues = issue_body.shape[0]
+
+        def to_ascii(c: str) -> int:
+            """
+            Convert a character to ascii.  Returns 0 for all characters that
+            are not ascii.
+            """
+            val = ord(c)
+            return 0 if val > 127 else val
+
+        def to_ascii_array(iss_bod: str) -> np.ndarray:
+            padded_issue_body = iss_bod.ljust(self.input_text_len, "\0")
+            new_array = np.fromiter((to_ascii(c) for c in padded_issue_body), dtype="int8")
+            assert len(new_array) == 1000
+            return new_array
+
+        # issue_body_ascii = np.vectorize(f)(issue_body)
+
+        issue_body_ascii = np.concatenate([to_ascii_array(iss) for iss in issue_body])
+
+        return issue_body_ascii.reshape((num_issues, self.input_text_len))
 
