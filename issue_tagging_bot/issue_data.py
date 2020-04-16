@@ -291,7 +291,7 @@ class Stage2PreprocData:
 
         return X, Y
 
-    def to_tf(self) -> tf.data.Dataset:
+    def to_encoded(self) -> (pd.Series, np.ndarray, pd.DataFrame):
         X, Y = self.process()
 
         # dataset = tf.data.Dataset.from_tensor_slices((X.values, Y.values))
@@ -311,12 +311,43 @@ class Stage2PreprocData:
         def to_ascii_array(iss_bod: str) -> np.ndarray:
             padded_issue_body = iss_bod.ljust(self.input_text_len, "\0")
             new_array = np.fromiter((to_ascii(c) for c in padded_issue_body), dtype="int8")
-            assert len(new_array) == 1000
+            assert len(new_array) == self.input_text_len
             return new_array
 
-        # issue_body_ascii = np.vectorize(f)(issue_body)
+        # This is a (NUM_ISSUES * TEXT_LEN,) array of ascii-encoded issue bodies.
+        issue_body_ascii: np.ndarray = np.concatenate([to_ascii_array(iss) for iss in issue_body])
 
-        issue_body_ascii = np.concatenate([to_ascii_array(iss) for iss in issue_body])
+        # This is a (NUM_ISSUES, TEXT_LEN) array of ascii-encoded issue bodies.
+        # This is normally around (15000, 1000)
+        issue_body_ascii: np.ndarray = issue_body_ascii.reshape((num_issues, self.input_text_len))
 
-        return issue_body_ascii.reshape((num_issues, self.input_text_len))
+        return X["issue_num"], issue_body_ascii, Y
+
+    def to_tf(self) -> tf.data.Dataset:
+        issue_nums, issue_body_ascii, Y = self.to_encoded()
+
+        # This is a dataset where each element has two tensors.  The first one
+        # is the input ascii issue body.  It is shape (TEXT_LEN,).  It is
+        # normally around (1000,).
+        #
+        # The second tensor is the topic labels we want to predict.  It is
+        # shape (NUM_TOP_N_TOPIC_LABELS,).  It is normally around (15,).
+        dataset = tf.data.Dataset.from_tensor_slices((issue_body_ascii, Y.values))
+
+        # Shuffle the dataset.
+        dataset = dataset.shuffle(buffer_size=20000, seed=42)
+
+        return dataset
+
+    def to_datasets(self, test_set_size: int = 1500, val_set_size: int = 1600) -> (tf.data.Dataset, tf.data.Dataset, tf.data.Dataset):
+        dataset = self.to_tf()
+
+        test_set = dataset.take(test_set_size)
+        dataset = dataset.skip(test_set_size)
+
+        val_set = dataset.take(val_set_size)
+        dataset = dataset.skip(val_set_size)
+        train_set = dataset
+
+        return train_set, val_set, test_set
 
