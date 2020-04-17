@@ -2,7 +2,7 @@
 
 from issue_tagging_bot.issue_data import Stage1PreprocData, Stage2PreprocData
 
-def main() -> None:
+def main():
 
     stage1 = Stage1PreprocData()
 

@@ -212,17 +212,17 @@ class Stage1PreprocData:
         # This is the same as topics above, but the indicies are almost the indicies of
         # the actual issues on GitHub (not 0 to NUM_ISSUES), but are slightly off in
         # certain cases.
-        topics: pd.DataFrame = topics.set_index(only_issues_indicies)
+        topics_with_index: pd.DataFrame = topics.set_index(only_issues_indicies)
 
         # This is the same as only_issues, but it has all the one-hot-encoded
         # topic labels as columns as well.
         only_issues_with_labels: pd.DataFrame = pd.concat(
-            [only_issues, topics], axis="columns"
+            [only_issues, topics_with_index], axis="columns"
         )
 
         self.only_issues: pd.DataFrame = only_issues
         self.topic_classes: np.ndarray = topic_classes
-        self.topics: pd.DataFrame = topics
+        self.topics: pd.DataFrame = topics_with_index
         self.only_issues_with_labels: pd.DataFrame = only_issues_with_labels
 
     def only_topics(self) -> pd.DataFrame:
@@ -259,8 +259,8 @@ class Stage2PreprocData:
     """
     This is the second stage of preprocessing the issue data.
 
-    This takes the Stage1PreprocData and turns it into raw floats that we can
-    operate on.
+    This takes the Stage1PreprocData and turns it into TensorFlow Datasets that
+    we can operate on.
     """
 
     def __init__(self, stage1: pd.DataFrame = None, input_text_len: int = 1000, top_n_topics: int = 15) -> None:
@@ -268,7 +268,7 @@ class Stage2PreprocData:
         self.input_text_len = input_text_len
         self.top_n_topics = top_n_topics
 
-    def process(self) -> (pd.DataFrame, pd.DataFrame):
+    def process(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """
         Return the input data and labels.
 
@@ -291,7 +291,7 @@ class Stage2PreprocData:
 
         return X, Y
 
-    def to_encoded(self) -> (pd.Series, np.ndarray, pd.DataFrame):
+    def to_encoded(self) -> Tuple[pd.Series, np.ndarray, pd.DataFrame]:
         X, Y = self.process()
 
         # dataset = tf.data.Dataset.from_tensor_slices((X.values, Y.values))
@@ -319,9 +319,9 @@ class Stage2PreprocData:
 
         # This is a (NUM_ISSUES, TEXT_LEN) array of ascii-encoded issue bodies.
         # This is normally around (15000, 1000)
-        issue_body_ascii: np.ndarray = issue_body_ascii.reshape((num_issues, self.input_text_len))
+        issue_body_ascii_reshaped: np.ndarray = issue_body_ascii.reshape((num_issues, self.input_text_len))
 
-        return X["issue_num"], issue_body_ascii, Y
+        return X["issue_num"], issue_body_ascii_reshaped, Y
 
     def to_tf(self) -> tf.data.Dataset:
         issue_nums, issue_body_ascii, Y = self.to_encoded()
@@ -339,7 +339,27 @@ class Stage2PreprocData:
 
         return dataset
 
-    def to_datasets(self, test_set_size: int = 1500, val_set_size: int = 1600) -> (tf.data.Dataset, tf.data.Dataset, tf.data.Dataset):
+    def to_datasets(self, test_set_size: int = 1500, val_set_size: int = 1600) -> Tuple[tf.data.Dataset, tf.data.Dataset, tf.data.Dataset]:
+        """
+        Return Datasets containing the training data, the validation data, and
+        the testing data.
+
+        These datasets are of shape:
+
+        - ((NUM_TRAIN_ISSUES,), (NUM_TOP_N_TOPIC_LABELS,))
+        - ((NUM_VAL_ISSUES,), (NUM_TOP_N_TOPIC_LABELS,))
+        - ((NUM_TEST_ISSUES,), (NUM_TOP_N_TOPIC_LABELS,))
+
+        These are normally around the size:
+
+        - ((12000,), (15,))
+        - ((1600,), (15,))
+        - ((1500,), (15,))
+
+        TODO: These three datasets haven't been stratified (which means that
+        the ratio of issue labels in each dataset may be slightly different due
+        to randomness).
+        """
         dataset = self.to_tf()
 
         test_set = dataset.take(test_set_size)
