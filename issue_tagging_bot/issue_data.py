@@ -326,13 +326,16 @@ class Stage2PreprocData:
     def to_tf(self) -> tf.data.Dataset:
         issue_nums, issue_body_ascii, Y = self.to_encoded()
 
-        # This is a dataset where each element has two tensors.  The first one
+        # This is a dataset where each element has three tensors.  The first one
         # is the input ascii issue body.  It is shape (TEXT_LEN,).  It is
         # normally around (1000,).
         #
         # The second tensor is the topic labels we want to predict.  It is
         # shape (NUM_TOP_N_TOPIC_LABELS,).  It is normally around (15,).
-        dataset = tf.data.Dataset.from_tensor_slices((issue_body_ascii, Y.values))
+        #
+        # The third tensor are the issue numbers.  This should be ignored while
+        # training.
+        dataset = tf.data.Dataset.from_tensor_slices((issue_body_ascii, Y.values, issue_nums))
 
         # Shuffle the dataset.
         dataset = dataset.shuffle(buffer_size=20000, seed=42)
@@ -346,15 +349,15 @@ class Stage2PreprocData:
 
         These datasets are of shape:
 
-        - ((NUM_TRAIN_ISSUES,), (NUM_TOP_N_TOPIC_LABELS,))
-        - ((NUM_VAL_ISSUES,), (NUM_TOP_N_TOPIC_LABELS,))
-        - ((NUM_TEST_ISSUES,), (NUM_TOP_N_TOPIC_LABELS,))
+        - ((NUM_TRAIN_ISSUES,), (NUM_TOP_N_TOPIC_LABELS,), ())
+        - ((NUM_VAL_ISSUES,), (NUM_TOP_N_TOPIC_LABELS,), ())
+        - ((NUM_TEST_ISSUES,), (NUM_TOP_N_TOPIC_LABELS,), ())
 
         These are normally around the size:
 
-        - ((12000,), (15,))
-        - ((1600,), (15,))
-        - ((1500,), (15,))
+        - ((12000,), (15,), ())
+        - ((1600,), (15,), ())
+        - ((1500,), (15,), ())
 
         TODO: These three datasets haven't been stratified (which means that
         the ratio of issue labels in each dataset may be slightly different due
