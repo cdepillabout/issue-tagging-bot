@@ -294,8 +294,6 @@ class Stage2PreprocData:
     def to_encoded(self) -> Tuple[pd.Series, np.ndarray, pd.DataFrame]:
         X, Y = self.process()
 
-        # dataset = tf.data.Dataset.from_tensor_slices((X.values, Y.values))
-
         issue_body = X.iloc[:, 1]
 
         num_issues = issue_body.shape[0]
@@ -303,7 +301,7 @@ class Stage2PreprocData:
         def to_ascii(c: str) -> int:
             """
             Convert a character to ascii.  Returns 0 for all characters that
-            are not ascii.
+            are not ascii.15916
             """
             val = ord(c)
             return 0 if val > 127 else val
@@ -338,7 +336,7 @@ class Stage2PreprocData:
         dataset = tf.data.Dataset.from_tensor_slices((issue_body_ascii, Y.values, issue_nums))
 
         # Shuffle the dataset.
-        dataset = dataset.shuffle(buffer_size=20000, seed=42)
+        dataset = dataset.shuffle(buffer_size=20000, seed=42, reshuffle_each_iteration=False)
 
         return dataset
 
