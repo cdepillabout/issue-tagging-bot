@@ -141,3 +141,6 @@ cython_debug/
 # data for all issues on github 
 /issue-data
 /issue-data.bak
+
+# logs for tensorboard
+/my_logs
